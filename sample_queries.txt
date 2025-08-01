@@ -1,0 +1,17 @@
+# Sample queries for testing the contact finder
+# Format: Name Title Company Location (be as specific as possible)
+
+Tim Cook CEO Apple Cupertino
+Sundar Pichai CEO Google Mountain View
+Satya Nadella CEO Microsoft Redmond
+Mark Zuckerberg CEO Meta Menlo Park
+Jensen Huang CEO NVIDIA Santa Clara
+
+# You can also search for specific people
+Elon Musk CEO Tesla Austin Texas
+Jeff Bezos Executive Chairman Amazon
+
+# Or search by company and role
+Chief Technology Officer OpenAI San Francisco
+VP of Engineering Stripe
+Head of Marketing Airbnb

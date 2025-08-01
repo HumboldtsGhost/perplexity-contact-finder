@@ -1,0 +1,21 @@
+{
+  "api_keys": {
+    "perplexity": "your-perplexity-api-key-here",
+    "hunter": "your-hunter-api-key-here",
+    "zerobounce": "your-zerobounce-api-key-here",
+    "numverify": "your-numverify-api-key-here",
+    "twilio_account_sid": "your-twilio-account-sid-here",
+    "twilio_auth_token": "your-twilio-auth-token-here"
+  },
+  "settings": {
+    "batch_size": 10,
+    "rate_limit_delay": 1.0,
+    "max_retries": 3,
+    "timeout": 30,
+    "verify_emails": true,
+    "verify_phones": true,
+    "output_format": "both",
+    "include_alternates": true,
+    "include_sources": true
+  }
+}

@@ -1,0 +1,7 @@
+openai>=1.0.0
+requests>=2.31.0
+phonenumbers>=8.13.0
+rich>=13.0.0
+questionary>=2.0.0
+pyfiglet>=0.8.0
+openpyxl>=3.0.0
