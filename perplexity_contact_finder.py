@@ -43,115 +43,139 @@ console = Console()
 
 # Search templates for different industries
 SEARCH_TEMPLATES = {
-    "government_federal": {
-        "name": "Federal Government Officials",
-        "description": "Find contacts for federal positions by role/agency",
+    "local_businesses": {
+        "name": "Local Businesses & Services",
+        "description": "Find local business owners and service providers",
         "examples": [
-            "current {position} of {agency} contact information",
-            "{agency} {department} leadership team contacts",
-            "all {state} senators contact information",
-            "{committee} committee members contact details",
-            "{agency} regional directors contact list"
+            "list of {service_type} companies in {city} {state} with owner names and contact info",
+            "{service_type} business owners {city} {state} email and phone directory",
+            "all {service_type} contractors {city} area owner contact details",
+            "top 10 {service_type} businesses {city} {state} decision maker contacts",
+            "{service_type} company owners association {city} member directory"
         ],
-        "fields": ["position", "agency", "department", "state", "committee"],
+        "fields": ["service_type", "city", "state", "county"],
         "multi_result": True
     },
-    "government_state": {
-        "name": "State Government Officials",
-        "description": "Find state government contacts by position/department",
+    "smb_by_industry": {
+        "name": "Small & Medium Businesses",
+        "description": "Find SMB owners and managers by industry/location",
         "examples": [
-            "current governor of {state} contact information",
-            "{state} state senators contact list",
-            "{state} {department} commissioner contact",
-            "{state} legislature leadership contacts",
-            "all {state} state representatives emails"
+            "{industry} small business owners {city} {state} contacts",
+            "all {industry} companies under 50 employees {state}",
+            "{industry} SMB owners association {region} member list",
+            "independent {industry} businesses {city} owner contacts",
+            "{industry} franchise owners {state} contact information"
         ],
-        "fields": ["state", "department", "position"],
+        "fields": ["industry", "city", "state", "region"],
         "multi_result": True
     },
-    "government_local": {
-        "name": "Local Government Officials",
-        "description": "Find city/county officials by position",
+    "contractors_trades": {
+        "name": "Contractors & Trade Services",
+        "description": "Find contractors, builders, and trade professionals",
         "examples": [
-            "current mayor of {city} {state} contact",
-            "all {city} city council members contacts",
-            "{county} county commissioners contact list",
-            "{city} {department} director contact information",
-            "{city} planning commission members"
+            "list of {trade} contractors {city} {state} with business owner contacts",
+            "licensed {trade} company owners {county} county email directory",
+            "{trade} contractor association {city} member list with emails",
+            "top rated {trade} businesses {city} owner names and phone numbers",
+            "all {trade} service companies {city} {state} decision maker contacts"
         ],
-        "fields": ["city", "county", "state", "department"],
+        "fields": ["trade", "city", "state", "county"],
         "multi_result": True
     },
-    "education_it": {
-        "name": "School IT/Technology Staff",
-        "description": "Find IT directors and tech staff in K-12 schools",
+    "retail_restaurants": {
+        "name": "Retail & Restaurant Businesses",
+        "description": "Find retail store and restaurant owners/managers",
         "examples": [
-            "complete list all IT directors {state} public schools contact information",
-            "all technology coordinators {state} school districts email addresses",
-            "{state} K-12 technology directors comprehensive contact list",
-            "directory of all {state} public school IT managers and staff",
-            "every technology director {state} school districts with emails"
+            "{business_type} owners {city} {state} contact list",
+            "all {business_type} managers {shopping_area} contact info",
+            "independent {business_type} {city} owner emails",
+            "{cuisine_type} restaurant owners {city} contacts",
+            "franchise {business_type} owners {state} directory"
         ],
-        "fields": ["state", "region", "district"],
+        "fields": ["business_type", "city", "state", "shopping_area", "cuisine_type"],
         "multi_result": True
     },
-    "business_executive": {
-        "name": "Business Executives by Company",
-        "description": "Find all executives at specific companies",
+    "professional_services": {
+        "name": "Professional Services",
+        "description": "Find lawyers, accountants, consultants, etc.",
         "examples": [
-            "{company} executive team contact information",
-            "all C-suite executives at {company}",
-            "{company} {department} leadership contacts",
-            "board of directors {company} contact list",
-            "{company} regional managers contact information"
+            "{profession} firms {city} {state} partner contacts",
+            "independent {profession} {city} email list",
+            "{specialty} {profession} {state} contact directory",
+            "small {profession} practices {county} owner info",
+            "{profession} association {state} member contacts"
         ],
-        "fields": ["company", "department"],
+        "fields": ["profession", "specialty", "city", "state", "county"],
         "multi_result": True
     },
-    "business_industry": {
-        "name": "Industry Leaders",
-        "description": "Find contacts across an industry",
+    "real_estate": {
+        "name": "Real Estate Professionals",
+        "description": "Find realtors, brokers, property managers",
         "examples": [
-            "top {industry} companies CEO contact list",
-            "{industry} industry association board members",
-            "Fortune 500 {industry} executives contacts",
-            "{region} {industry} company presidents",
-            "{industry} trade organization leadership"
+            "real estate brokers {city} {state} contact list",
+            "property management companies {city} owner contacts",
+            "commercial real estate agents {city} emails",
+            "{property_type} developers {state} contact info",
+            "real estate investors {city} contact directory"
         ],
-        "fields": ["industry", "region"],
+        "fields": ["city", "state", "property_type"],
+        "multi_result": True
+    },
+    "healthcare_providers": {
+        "name": "Healthcare & Medical Practices",
+        "description": "Find doctors, dentists, clinics, care facilities",
+        "examples": [
+            "{specialty} doctors {city} {state} practice contacts",
+            "dental offices {city} owner contact information",
+            "{care_type} facilities {county} administrator emails",
+            "private practice {specialty} {state} contact list",
+            "medical clinics {city} manager directory"
+        ],
+        "fields": ["specialty", "care_type", "city", "state", "county"],
+        "multi_result": True
+    },
+    "business_associations": {
+        "name": "Business Associations & Chambers",
+        "description": "Find chamber of commerce and business groups",
+        "examples": [
+            "{city} chamber of commerce board members contacts",
+            "{industry} association {state} leadership emails",
+            "business networking groups {city} organizer contacts",
+            "{city} downtown business association member list",
+            "small business alliance {state} directory"
+        ],
+        "fields": ["city", "state", "industry"],
+        "multi_result": True
+    },
+    "government": {
+        "name": "Government Officials",
+        "description": "Find government contacts at any level",
+        "examples": [
+            "{level} government {department} {location} contacts",
+            "{title} of {location} contact information",
+            "{location} {office} staff directory",
+            "all {location} {position} email addresses"
+        ],
+        "fields": ["level", "department", "location", "title", "office", "position"],
         "multi_result": True
     },
     "nonprofit": {
         "name": "Nonprofit Organizations",
         "description": "Find nonprofit leaders by cause or region",
         "examples": [
-            "{cause} nonprofit executive directors {state}",
-            "largest {cause} foundations leadership contacts",
-            "{city} nonprofit board presidents list",
-            "{cause} advocacy organizations contacts",
-            "community foundation directors {region}"
+            "{cause} nonprofit directors {location} contacts",
+            "{organization_type} {location} leadership emails",
+            "community organizations {city} contact list",
+            "{cause} foundations {state} board members"
         ],
-        "fields": ["cause", "state", "city", "region"],
+        "fields": ["cause", "location", "city", "state", "organization_type"],
         "multi_result": True
     },
-    "education": {
-        "name": "Education Leaders",
-        "description": "Find education administrators by institution type",
+    "custom_search": {
+        "name": "Custom Search",
+        "description": "Enter your own search query for any type of contact",
         "examples": [
-            "{state} university presidents contact list",
-            "{city} school district superintendents",
-            "{state} community college presidents",
-            "Ivy League deans of {department}",
-            "{region} private school headmasters"
-        ],
-        "fields": ["state", "city", "department", "region"],
-        "multi_result": True
-    },
-    "batch_custom": {
-        "name": "Batch Custom Search",
-        "description": "Enter multiple search queries for bulk processing",
-        "examples": [
-            "Enter multiple queries, one per line"
+            "Enter any search query for contact information"
         ],
         "fields": [],
         "multi_result": True
@@ -253,20 +277,22 @@ class ContactFinder:
             
             for query in batch:
                 try:
-                    # Search for contact
+                    # Search for contacts (returns multiple)
                     logger.info(f"Searching for: {query}")
-                    contact = self.perplexity.search_contact(query)
+                    contacts = self.perplexity.search_contact(query)
                     
-                    if contact:
-                        # Verify emails
-                        self.email_verifier.verify_all_emails(contact)
-                        
-                        # Verify phones
-                        self.phone_verifier.verify_all_phones(contact)
-                        
-                        # Add to results
-                        self.results.append(contact)
-                        logger.info(f"Found: {contact.name} - {contact.primary_email} (Confidence: {contact.confidence_score:.2f})")
+                    if contacts:
+                        logger.info(f"Found {len(contacts)} contacts for: {query}")
+                        for contact in contacts:
+                            # Verify emails
+                            self.email_verifier.verify_all_emails(contact)
+                            
+                            # Verify phones
+                            self.phone_verifier.verify_all_phones(contact)
+                            
+                            # Add to results
+                            self.results.append(contact)
+                            logger.info(f"  - {contact.name} at {contact.company} - {contact.primary_email} (Confidence: {contact.confidence_score:.2f})")
                     else:
                         logger.warning(f"No results for: {query}")
                     
@@ -436,7 +462,7 @@ def build_search_query(template: Dict, template_key: str) -> List[str]:
     """Build search queries based on template"""
     console.print(f"\n[bold]🔍 Building Search Query[/bold]")
     
-    if template_key == "batch_custom":
+    if template_key == "custom_search":
         # Batch custom search
         queries = []
         console.print("Enter your search queries (one per line, empty line to finish):")
@@ -477,12 +503,44 @@ def build_search_query(template: Dict, template_key: str) -> List[str]:
             value = Prompt.ask(f"  {field.title()} (e.g., Microsoft, Apple, Tesla)", default="")
         elif field == "industry":
             value = Prompt.ask(f"  {field.title()} (e.g., technology, healthcare, finance)", default="")
+        elif field == "service_type":
+            value = Prompt.ask(f"  Service Type (e.g., roofing, plumbing, HVAC, landscaping)", default="")
+        elif field == "trade":
+            value = Prompt.ask(f"  Trade/Profession (e.g., electrician, carpenter, painter)", default="")
+        elif field == "business_type":
+            value = Prompt.ask(f"  Business Type (e.g., restaurant, retail store, coffee shop)", default="")
+        elif field == "profession":
+            value = Prompt.ask(f"  Profession (e.g., lawyer, accountant, consultant)", default="")
+        elif field == "specialty":
+            value = Prompt.ask(f"  Specialty (e.g., criminal law, tax accounting, IT consulting)", default="")
+        elif field == "property_type":
+            value = Prompt.ask(f"  Property Type (e.g., residential, commercial, industrial)", default="")
+        elif field == "care_type":
+            value = Prompt.ask(f"  Care Type (e.g., urgent care, nursing home, rehab center)", default="")
+        elif field == "cuisine_type":
+            value = Prompt.ask(f"  Cuisine Type (e.g., Italian, Mexican, Chinese)", default="")
+        elif field == "shopping_area":
+            value = Prompt.ask(f"  Shopping Area/Mall (e.g., Downtown, Main Street, Westfield Mall)", default="")
+        elif field == "organization_type":
+            value = Prompt.ask(f"  Organization Type (e.g., charity, foundation, association)", default="")
+        elif field == "location":
+            value = Prompt.ask(f"  Location (city, state, or region)", default="")
+        elif field == "level":
+            value = Prompt.ask(f"  Government Level (e.g., federal, state, local, city, county)", default="")
+        elif field == "title":
+            value = Prompt.ask(f"  Title/Position (e.g., mayor, director, commissioner)", default="")
+        elif field == "office":
+            value = Prompt.ask(f"  Office/Department (e.g., planning, parks, public works)", default="")
+        elif field == "position":
+            value = Prompt.ask(f"  Position (e.g., council member, board member, director)", default="")
         elif field == "department":
             value = Prompt.ask(f"  {field.title()} (e.g., Engineering, Marketing, Finance)", default="")
         elif field == "agency":
             value = Prompt.ask(f"  {field.title()} (e.g., EPA, FDA, Department of Defense)", default="")
         elif field == "cause":
             value = Prompt.ask(f"  {field.title()} (e.g., education, healthcare, environment)", default="")
+        elif field == "region":
+            value = Prompt.ask(f"  Region (e.g., Northeast, Midwest, Bay Area)", default="")
         else:
             value = Prompt.ask(f"  {field.title()}", default="")
         
@@ -495,6 +553,32 @@ def build_search_query(template: Dict, template_key: str) -> List[str]:
         city_parts = field_values['city'].split(',')
         if len(city_parts) > 1:
             field_values['city'] = city_parts[0].strip()
+    
+    # Handle multiple service types/trades/etc separated by commas
+    multi_value_fields = ['service_type', 'trade', 'business_type', 'profession']
+    expanded_queries = []
+    
+    for field in multi_value_fields:
+        if field in field_values and ',' in field_values[field]:
+            # Split the field into multiple values
+            values = [v.strip() for v in field_values[field].split(',')]
+            # Generate queries for each value separately
+            for value in values:
+                temp_values = field_values.copy()
+                temp_values[field] = value
+                
+                # Generate queries for this specific value
+                for example in template['examples']:
+                    try:
+                        query = example.format(**temp_values)
+                        if '{' not in query:
+                            expanded_queries.append(query)
+                    except KeyError:
+                        pass
+    
+    # If we generated expanded queries, use those instead
+    if expanded_queries:
+        return expanded_queries
     
     # Generate queries from examples
     queries = []
@@ -511,16 +595,44 @@ def build_search_query(template: Dict, template_key: str) -> List[str]:
     
     # If no queries generated, create some based on filled fields
     if not queries and field_values:
-        if template_key == "government_federal" and "agency" in field_values:
-            queries.append(f"{field_values['agency']} leadership team contact information")
-        elif template_key == "government_state" and "state" in field_values:
-            queries.append(f"{field_values['state']} state government leadership contacts")
-        elif template_key == "government_local" and "city" in field_values:
-            queries.append(f"{field_values['city']} city government officials contact list")
-        elif template_key == "business_executive" and "company" in field_values:
-            queries.append(f"{field_values['company']} executive team contact information")
-        elif template_key == "business_industry" and "industry" in field_values:
-            queries.append(f"{field_values['industry']} industry leaders contact list")
+        if template_key == "local_businesses" and "service_type" in field_values:
+            service = field_values.get('service_type')
+            location = field_values.get('city', field_values.get('state', 'area'))
+            queries.append(f"{service} companies {location} owner contact information")
+        elif template_key == "smb_by_industry" and "industry" in field_values:
+            industry = field_values.get('industry')
+            location = field_values.get('city', field_values.get('state', 'area'))
+            queries.append(f"{industry} small business owners {location} contact list")
+        elif template_key == "contractors_trades" and "trade" in field_values:
+            trade = field_values.get('trade')
+            location = field_values.get('city', field_values.get('state', 'area'))
+            queries.append(f"{trade} contractors {location} business contacts")
+        elif template_key == "retail_restaurants" and "business_type" in field_values:
+            business = field_values.get('business_type')
+            location = field_values.get('city', field_values.get('state', 'area'))
+            queries.append(f"{business} owners {location} contact list")
+        elif template_key == "professional_services" and "profession" in field_values:
+            profession = field_values.get('profession')
+            location = field_values.get('city', field_values.get('state', 'area'))
+            queries.append(f"{profession} firms {location} contact information")
+        elif template_key == "real_estate" and ("city" in field_values or "state" in field_values):
+            location = field_values.get('city', field_values.get('state', 'area'))
+            queries.append(f"real estate professionals {location} contact list")
+        elif template_key == "healthcare_providers" and ("specialty" in field_values or "care_type" in field_values):
+            type_val = field_values.get('specialty', field_values.get('care_type', 'medical'))
+            location = field_values.get('city', field_values.get('state', 'area'))
+            queries.append(f"{type_val} providers {location} contact information")
+        elif template_key == "business_associations" and "city" in field_values:
+            city = field_values.get('city')
+            queries.append(f"{city} chamber of commerce member contact list")
+        elif template_key == "government" and "location" in field_values:
+            location = field_values.get('location')
+            level = field_values.get('level', '')
+            queries.append(f"{level} government officials {location} contact information")
+        elif template_key == "nonprofit" and ("cause" in field_values or "location" in field_values):
+            cause = field_values.get('cause', 'nonprofit')
+            location = field_values.get('location', field_values.get('city', field_values.get('state', '')))
+            queries.append(f"{cause} organizations {location} director contacts")
     
     # Show generated queries
     if queries:
@@ -582,18 +694,20 @@ def run_search_with_animation(finder: ContactFinder, queries: List[str]):
             progress.update(task, description=f"[cyan]Searching: {query[:50]}...")
             
             try:
-                # Search for contact
-                contact = finder.perplexity.search_contact(query)
+                # Search for contacts (returns multiple)
+                contacts = finder.perplexity.search_contact(query)
                 
-                if contact:
-                    # Verify if enabled
-                    if finder.config.get_setting('verify_emails'):
-                        finder.email_verifier.verify_all_emails(contact)
-                    if finder.config.get_setting('verify_phones'):
-                        finder.phone_verifier.verify_all_phones(contact)
-                    
-                    results.append(contact)
-                    console.print(f"[green]✓[/green] Found: {contact.name}")
+                if contacts:
+                    console.print(f"[green]✓[/green] Found {len(contacts)} contacts for: {query}")
+                    for contact in contacts:
+                        # Verify if enabled
+                        if finder.config.get_setting('verify_emails'):
+                            finder.email_verifier.verify_all_emails(contact)
+                        if finder.config.get_setting('verify_phones'):
+                            finder.phone_verifier.verify_all_phones(contact)
+                        
+                        results.append(contact)
+                        console.print(f"   • {contact.name} at {contact.company}")
                 else:
                     console.print(f"[red]✗[/red] Not found: {query}")
             except Exception as e:
