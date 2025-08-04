@@ -3,7 +3,7 @@
 [![GitHub](https://img.shields.io/github/license/HumboldtsGhost/perplexity-contact-finder)](https://github.com/HumboldtsGhost/perplexity-contact-finder/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
-A powerful Python tool that uses Perplexity AI to find contact information and enriches it through verification layers. The tool preserves source citations and captures alternate contact information.
+A powerful Python tool that uses Perplexity AI to find specific business owner and decision-maker contact information. The tool returns multiple contacts per search, preserves source citations, and enriches data through verification layers.
 
 ## 🚀 Super Quick Start (For Everyone!)
 
@@ -32,15 +32,18 @@ That's it! The tool will guide you through everything else. 🎉
 ## Features
 
 - 🎯 **Interactive Mode**: User-friendly interface with templates and wizards
+- 🏢 **Business Owner Focus**: Finds specific company names with owner/decision-maker contacts
+- 🔢 **Multiple Results**: Returns 5-10+ actual businesses per search query
 - 🏛️ **Bulk Government Search**: Find entire teams - senators, city councils, agency directors
 - 💼 **Company-Wide Search**: Get all executives, board members, or department heads at once
 - 🏭 **Industry-Wide Search**: Find leaders across entire industries or regions
-- 🔍 **Contact Discovery**: Uses Perplexity AI to find contact information
+- 🤖 **Smart Query Splitting**: Automatically splits comma-separated service types into separate searches
+- 🔍 **Contact Discovery**: Uses enhanced Perplexity AI prompts for better results
 - ✅ **Email Verification**: Supports Hunter.io and ZeroBounce APIs
 - 📞 **Phone Verification**: Supports Numverify and Twilio APIs
 - 📚 **Source Citations**: Preserves all sources where information was found
 - 🔄 **Alternate Contacts**: Captures all email and phone variations
-- 💾 **Multiple Export Formats**: CSV, Apollo-compatible CSV, and JSON
+- 💾 **Multiple Export Formats**: CSV, Apollo-compatible CSV, Excel, and JSON
 - ⏸️ **Resume Capability**: Can pause and resume long-running searches
 - 🔧 **Flexible Configuration**: Use default API keys or provide your own
 - 🆘 **Built-in Help**: Interactive help system for troubleshooting
@@ -52,6 +55,11 @@ That's it! The tool will guide you through everything else. 🎉
 2. Install dependencies:
 ```bash
 pip install -r requirements.txt
+```
+
+**Note**: For Excel export functionality, you'll also need:
+```bash
+pip install openpyxl
 ```
 
 ## Quick Start
@@ -215,6 +223,11 @@ The tool creates an `output` directory with:
    - Full source citations
    - All metadata
 
+4. **Excel** (`contacts_TIMESTAMP.xlsx`):
+   - Professional spreadsheet format
+   - Separate worksheets for different data views
+   - Formatted for easy analysis
+
 ## API Services
 
 ### Email Verification
@@ -228,31 +241,41 @@ The tool creates an `output` directory with:
 
 ## Tips for Best Results
 
-1. **Bulk Searches**: Design queries to find multiple contacts at once
-   - Good: "California state senators contact list"
-   - Better: "all California state senators email addresses and phone numbers"
-   - Best: "current California state senators contact information including emails"
+1. **Business Owner Searches**: Focus on finding specific companies with owner contacts
+   - Good: "roofing companies in Austin Texas owner contact information"
+   - Better: "list of roofing contractors Austin Texas with owner names and emails"
+   - Best: "top 10 roofing businesses Austin Texas decision maker contacts"
 
-2. **Role-Based Searches**: Focus on positions rather than names
-   - "Microsoft executive team contacts"
-   - "Austin city council members emails"
-   - "Fortune 500 healthcare CEOs contact list"
+2. **Multiple Service Types**: Use commas to search multiple industries at once
+   - Input: "roofing, plumbing, HVAC" → Creates separate searches for each
+   - Input: "restaurants, coffee shops, bakeries" → Finds owners for each type
+   - Input: "lawyer, accountant, consultant" → Gets contacts for each profession
 
-3. **Industry Searches**: Cast a wide net across industries
-   - "renewable energy companies board members"
-   - "Bay Area startup founders contact information"
-   - "top pharmaceutical companies executives"
+3. **Contractor Searches**: Be specific about trade and location
+   - "licensed electrician contractors Nashville owner contacts"
+   - "commercial HVAC companies Dallas business owner emails"
+   - "residential plumbing services Phoenix decision maker list"
 
-4. **Government Searches**: Be specific about jurisdiction
+4. **Local Business Searches**: Include owner/decision-maker keywords
+   - "restaurant owners downtown Chicago contact list"
+   - "retail store managers Main Street district emails"
+   - "auto repair shop owners Denver area directory"
+
+5. **Government Searches**: Be specific about jurisdiction
    - "Texas state government cabinet members"
    - "New York City department commissioners"
    - "EPA regional directors contact list"
 
-5. **Rate Limits**: The tool respects API rate limits automatically
+6. **Industry Association Searches**: Target member directories
+   - "roofing contractors association California member list"
+   - "restaurant owners association Austin member contacts"
+   - "small business alliance Seattle directory"
 
-6. **Verification**: Email/phone verification improves data quality but takes longer
+7. **Rate Limits**: The tool respects API rate limits automatically
 
-7. **Sources**: Always check the sources to verify information accuracy
+8. **Verification**: Email/phone verification improves data quality but takes longer
+
+9. **Sources**: Always check the sources to verify information accuracy
 
 ## Troubleshooting
 
@@ -272,24 +295,33 @@ The tool creates an `output` directory with:
 
 ## Example Bulk Search Results
 
-When searching for "California state senators contact list", the tool might return:
+When searching for "roofing companies in Greenville SC owner contact information", the tool might return:
 
 ```
-Found 40 contacts:
+Found 8 contacts:
 
-1. Name: Senator Jane Smith
-   District: 1
-   Email: senator.smith@senate.ca.gov
-   Phone: +1-916-555-0001
-   Sources: California Senate Website, Official Directory
+1. Name: John Smith (Owner)
+   Company: Smith Roofing LLC
+   Email: john@smithroofing.com
+   Phone: +1-864-555-1234
+   Sources: Company Website, BBB Profile
+   Notes: Family-owned business since 1995
 
-2. Name: Senator Robert Johnson
-   District: 2
-   Email: senator.johnson@senate.ca.gov
-   Phone: +1-916-555-0002
-   Sources: Senate.ca.gov, District Office Page
+2. Name: Maria Garcia (President)
+   Company: Garcia Brothers Roofing Inc
+   Email: maria@garciaroofing.com
+   Phone: +1-864-555-5678
+   Sources: Chamber of Commerce Directory, Company About Page
+   Notes: Commercial and residential services
 
-... (and 38 more contacts)
+3. Name: Bob Wilson (CEO)
+   Company: Premier Roofing Solutions
+   Email: bwilson@premierroofingsc.com
+   Phone: +1-864-555-9012
+   Sources: LinkedIn Profile, Industry Directory
+   Notes: Specializes in metal roofing
+
+... (and 5 more contacts)
 ```
 
 The tool automatically:
