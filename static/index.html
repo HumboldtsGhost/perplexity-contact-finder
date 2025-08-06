@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Finder Pro - Find Business Contacts Easily</title>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-brand">
+                    <i class="fas fa-search"></i>
+                    <span>Contact Finder Pro</span>
+                </div>
+                <div class="nav-menu">
+                    <button class="nav-item active" onclick="showPage('search', this)">
+                        <i class="fas fa-home"></i> Search
+                    </button>
+                    <button class="nav-item" onclick="showPage('results', this)">
+                        <i class="fas fa-table"></i> Results
+                    </button>
+                    <button class="nav-item" onclick="showPage('settings', this)">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                    <button class="nav-item" onclick="showPage('help', this)">
+                        <i class="fas fa-question-circle"></i> Help
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Alert Messages -->
+        <div id="alert-container"></div>
+
+        <!-- Search Page -->
+        <div id="search-page" class="page active">
+            <div class="container">
+                <div class="hero-section">
+                    <h1>Find Business Contacts in Seconds</h1>
+                    <p>Discover owner and decision-maker contact information with AI-powered search</p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-value" id="contacts-found">0</div>
+                        <div class="stat-label">Contacts Found</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="searches-performed">0</div>
+                        <div class="stat-label">Searches Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">95%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+
+                <!-- Search Tabs -->
+                <div class="tabs">
+                    <button class="tab-button active" onclick="switchTab('template')">
+                        <i class="fas fa-list"></i> Use Templates
+                    </button>
+                    <button class="tab-button" onclick="switchTab('manual')">
+                        <i class="fas fa-keyboard"></i> Manual Search
+                    </button>
+                </div>
+
+                <!-- Template Search Tab -->
+                <div id="template-tab" class="tab-content active">
+                    <div class="search-box">
+                        <div class="template-selector">
+                            <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Choose a Search Template:</label>
+                            <select id="template-select" onchange="loadTemplateFields()" style="width: 100%; padding: 0.75rem; font-size: 1rem; margin-bottom: 1rem;">
+                                <option value="">Select a template...</option>
+                            </select>
+                            
+                            <div id="template-fields" class="template-fields"></div>
+                            
+                            <div class="search-options" style="margin-top: 1rem;">
+                                <label class="option">
+                                    <input type="radio" name="template-search-mode" value="standard" checked>
+                                    <span><i class="fas fa-lightning-bolt"></i> Standard (Faster)</span>
+                                </label>
+                                <label class="option">
+                                    <input type="radio" name="template-search-mode" value="enhanced">
+                                    <span><i class="fas fa-rocket"></i> Enhanced (More Results)</span>
+                                </label>
+                            </div>
+                            
+                            <button class="btn btn-primary btn-large" onclick="searchWithTemplate()" style="display: none;" id="template-search-btn">
+                                <i class="fas fa-search"></i> Search with Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Search Tab -->
+                <div id="manual-tab" class="tab-content">
+                    <div class="search-box">
+                        <textarea id="search-query" placeholder="Example: roofing contractors in Austin Texas with owner contact information" rows="3"></textarea>
+                        
+                        <div class="search-options">
+                            <label class="option">
+                                <input type="radio" name="search-mode" value="standard" checked>
+                                <span><i class="fas fa-lightning-bolt"></i> Standard (Faster)</span>
+                            </label>
+                            <label class="option">
+                                <input type="radio" name="search-mode" value="enhanced">
+                                <span><i class="fas fa-rocket"></i> Enhanced (More Results)</span>
+                            </label>
+                            <label class="option checkbox">
+                                <input type="checkbox" id="verify-contacts">
+                                <span><i class="fas fa-check-circle"></i> Verify Emails & Phones</span>
+                            </label>
+                        </div>
+                        
+                        <button class="btn btn-primary btn-large" onclick="performSearch()">
+                            <i class="fas fa-search"></i> Search Now
+                        </button>
+                    </div>
+                </div>
+
+
+                <!-- Progress Bar and Activity Log -->
+                <div id="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-controls">
+                        <div class="progress-text" id="progress-text">Searching...</div>
+                        <button class="btn btn-danger btn-small" onclick="cancelSearch()">
+                            <i class="fas fa-stop-circle"></i> Cancel Search
+                        </button>
+                    </div>
+                    
+                    <!-- Activity Log -->
+                    <div class="activity-log-container">
+                        <div class="activity-log-header">
+                            <i class="fas fa-terminal"></i> Activity Log
+                            <button class="btn-small" onclick="toggleActivityLog()">
+                                <i class="fas fa-chevron-down" id="log-toggle-icon"></i>
+                            </button>
+                        </div>
+                        <div id="activity-log" class="activity-log expanded">
+                            <div class="log-entry">Initializing search...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Page -->
+        <div id="results-page" class="page">
+            <div class="container">
+                <h2>Search Results</h2>
+                
+                <div class="results-toolbar">
+                    <div class="toolbar-left">
+                        <div class="results-count">
+                            <span id="results-count">0</span> contacts found
+                            <span id="selected-count" style="display: none;"> | <span id="selected-number">0</span> selected</span>
+                        </div>
+                        <div class="bulk-actions" id="bulk-actions" style="display: none;">
+                            <button class="btn btn-secondary" onclick="deleteSelected()">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                            <button class="btn btn-secondary" onclick="verifySelected()">
+                                <i class="fas fa-check-circle"></i> Verify
+                            </button>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <div class="filter-sort">
+                            <input type="text" id="filter-input" placeholder="Filter results..." onkeyup="filterResults()">
+                            <select id="sort-select" onchange="sortResults()">
+                                <option value="">Sort by...</option>
+                                <option value="name">Name</option>
+                                <option value="company">Company</option>
+                                <option value="confidence">Confidence</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="export-buttons">
+                        <button class="btn btn-secondary" onclick="exportResults('csv')">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportResults('excel')">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportResults('json')">
+                            <i class="fas fa-file-code"></i> JSON
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportResults('apollo')">
+                            <i class="fas fa-rocket"></i> Apollo
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table id="results-table">
+                        <thead>
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="select-all" onchange="toggleSelectAll()">
+                                </th>
+                                <th>Name</th>
+                                <th>Company</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Confidence</th>
+                                <th>Verified</th>
+                                <th>Sources</th>
+                                <th width="100">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody">
+                            <tr>
+                                <td colspan="9" class="no-data">No results yet. Start a search to see contacts here.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settings-page" class="page">
+            <div class="container">
+                <h2>Settings & Configuration</h2>
+                
+                <div class="settings-card">
+                    <h3>API Key Configuration</h3>
+                    <p class="text-muted">Your API keys are stored locally and never shared</p>
+                    
+                    <form autocomplete="off" id="api-form">
+                    <div class="form-group">
+                        <label>Perplexity API Key <span class="required">*</span></label>
+                        <input type="password" id="perplexity-key" placeholder="pplx-xxxxxxxxxxxx">
+                        <small>Required for searching contacts. Get it from <a href="https://www.perplexity.ai" target="_blank">Perplexity AI</a></small>
+                    </div>
+                    
+                    <h4>Optional Verification Services</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hunter.io API Key</label>
+                            <input type="password" id="hunter-key" placeholder="Optional">
+                            <small>For email verification</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>ZeroBounce API Key</label>
+                            <input type="password" id="zerobounce-key" placeholder="Optional">
+                            <small>Alternative email verification</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>NumVerify API Key</label>
+                            <input type="password" id="numverify-key" placeholder="Optional">
+                            <small>For phone verification</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Twilio Account SID</label>
+                            <input type="password" id="twilio-sid" placeholder="Optional">
+                            <small>For Twilio phone verification</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Twilio Auth Token</label>
+                        <input type="password" id="twilio-token" placeholder="Optional">
+                        <small>Required if using Twilio</small>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> Save Configuration
+                    </button>
+                    </form>
+                </div>
+                
+                <div class="settings-card">
+                    <h3>Configuration Status</h3>
+                    <div id="config-status">
+                        <div class="status-item">
+                            <span>Checking configuration...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Page -->
+        <div id="help-page" class="page">
+            <div class="container">
+                <h2>Help & Documentation</h2>
+                
+                <div class="help-section">
+                    <h3><i class="fas fa-rocket"></i> Getting Started</h3>
+                    <div class="help-content">
+                        <p>Welcome to Contact Finder Pro! Here's how to get started:</p>
+                        <ol>
+                            <li>Go to Settings and add your Perplexity API key</li>
+                            <li>Return to Search and enter what you're looking for</li>
+                            <li>Click Search and view your results</li>
+                            <li>Export results in your preferred format</li>
+                        </ol>
+                        <p><strong>No API Key?</strong> Get one at <a href="https://www.perplexity.ai" target="_blank">Perplexity AI</a></p>
+                    </div>
+                </div>
+                
+                <div class="help-section">
+                    <h3><i class="fas fa-search"></i> Search Tips</h3>
+                    <div class="help-content">
+                        <h4>Effective Search Queries</h4>
+                        <p><strong>Good Examples:</strong></p>
+                        <ul>
+                            <li>"roofing contractors in Austin Texas owner contact"</li>
+                            <li>"restaurant owners downtown Chicago email list"</li>
+                            <li>"medical practices Houston decision makers"</li>
+                        </ul>
+                        
+                        <h4>Search Modes</h4>
+                        <ul>
+                            <li><strong>Standard:</strong> Faster, returns 5-10 results</li>
+                            <li><strong>Enhanced:</strong> Slower, returns 20+ results with deeper searching</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="help-section">
+                    <h3><i class="fas fa-table"></i> Understanding Results</h3>
+                    <div class="help-content">
+                        <ul>
+                            <li><strong>Name:</strong> Contact person's name</li>
+                            <li><strong>Company:</strong> Business name</li>
+                            <li><strong>Email/Phone:</strong> Contact information found</li>
+                            <li><strong>Confidence:</strong> How confident we are in the accuracy</li>
+                            <li><strong>Sources:</strong> Number of sources that confirm this information</li>
+                            <li><strong>Verification:</strong> Whether email/phone has been verified</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="help-section">
+                    <h3><i class="fas fa-download"></i> Export Formats</h3>
+                    <div class="help-content">
+                        <ul>
+                            <li><strong>CSV:</strong> Opens in Excel, Google Sheets</li>
+                            <li><strong>Excel:</strong> Full spreadsheet with multiple sheets</li>
+                            <li><strong>JSON:</strong> For developers and advanced users</li>
+                            <li><strong>Apollo:</strong> Compatible with Apollo.io CRM</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

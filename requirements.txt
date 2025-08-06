@@ -5,3 +5,6 @@ rich>=13.0.0
 questionary>=2.0.0
 pyfiglet>=0.8.0
 openpyxl>=3.0.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6

@@ -5,9 +5,54 @@
 
 A powerful Python tool that uses Perplexity AI to find specific business owner and decision-maker contact information. The tool returns multiple contacts per search, preserves source citations, and enriches data through verification layers.
 
-## 🚀 Super Quick Start (For Everyone!)
+## 🌟 NEW: Web Interface - ONE CLICK TO START!
 
-### Mac/Linux Users:
+### 🚀 Super Easy Launch (Pick One):
+
+#### For Everyone (Universal):
+```bash
+python3 start.py
+```
+**That's it!** It will:
+- ✅ Install everything needed automatically
+- ✅ Open your web browser automatically
+- ✅ Start the app at http://localhost:8000
+
+#### For Mac/Linux:
+```bash
+./start.sh
+```
+Or just **double-click** the `start.sh` file
+
+#### For Windows:
+```
+Double-click start.bat
+```
+Or run `start.bat` in Command Prompt
+
+### Web Interface Features:
+- ⚡ **Instant loading** - No waiting, immediately responsive
+- 🖱️ **Point-and-click interface** - No typing commands
+- 📋 **Search templates** - Pre-built queries for common searches  
+- 📊 **Interactive results** - Sort, filter, and explore data visually
+- 💾 **One-click export** - Download in any format instantly
+- 🔐 **Secure API key management** - Easy configuration through the UI
+- 📱 **Mobile friendly** - Works on phones and tablets
+- 🚀 **Auto-setup** - Dependencies install automatically
+
+## 🚀 Quick Start Options
+
+### Option 1: Web Interface (Recommended - ONE COMMAND!)
+```bash
+# Just run this:
+python3 start.py
+
+# Everything else happens automatically!
+```
+
+### Option 2: Command Line (Traditional Method)
+
+#### Mac/Linux Users:
 ```bash
 # 1. Open Terminal and navigate to this folder
 # 2. Run setup (only needed once):
@@ -17,7 +62,7 @@ A powerful Python tool that uses Perplexity AI to find specific business owner a
 ./run.sh
 ```
 
-### Windows Users:
+#### Windows Users:
 ```
 1. Double-click setup.bat (only needed once)
 2. Double-click run.bat
