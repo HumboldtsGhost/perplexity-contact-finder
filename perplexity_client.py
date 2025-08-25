@@ -308,3 +308,113 @@ Respond with a JSON array containing multiple businesses as specified above."""
                     print(f"No results for: {query}")
         
         return results
+    
+    def enrich_contact(self, name: str = "", company: str = "", 
+                      title: str = "", location: str = "",
+                      existing_email: str = "", existing_phone: str = "") -> Optional[ContactInfo]:
+        """Enrich a single contact with missing email/phone information"""
+        
+        # Build targeted enrichment prompt
+        system_prompt = """You are an expert at finding missing contact information for specific individuals and companies.
+Your task is to find verified email addresses and phone numbers for the exact person or company provided.
+
+IMPORTANT: 
+1. Find the EXACT person's direct contact info (not generic company info@)
+2. If a person name is given, find THEIR specific email/phone
+3. Verify information from multiple sources when possible
+4. Check company websites, directories, social profiles, and public records
+5. Return confidence scores based on source reliability"""
+
+        # Build the query
+        query_parts = []
+        if name and company:
+            query_parts.append(f"{name} at {company}")
+        elif name:
+            query_parts.append(name)
+        elif company:
+            query_parts.append(f"{company} owner or CEO")
+        else:
+            return None
+        
+        if title:
+            query_parts.append(title)
+        if location:
+            query_parts.append(location)
+        
+        # Specify what we're looking for
+        missing = []
+        if not existing_email:
+            missing.append("email address")
+        if not existing_phone:
+            missing.append("phone number")
+        
+        if not missing:
+            return None  # Already has both
+        
+        user_prompt = f"""Find the {' and '.join(missing)} for: {' '.join(query_parts)}
+
+Current information:
+- Name: {name or 'Unknown'}
+- Company: {company or 'Unknown'}
+- Title: {title or 'Unknown'}
+- Location: {location or 'Unknown'}
+- Has Email: {'Yes - ' + existing_email if existing_email else 'No'}
+- Has Phone: {'Yes - ' + existing_phone if existing_phone else 'No'}
+
+Search for the SPECIFIC {' and '.join(missing)} for this exact person/company.
+Check their company website, LinkedIn, business directories, and public records.
+
+Return JSON format:
+{{
+    "name": "exact name found",
+    "company": "exact company name",
+    "emails": ["primary@email.com", "alternate@email.com"],
+    "phones": ["+1-XXX-XXX-XXXX"],
+    "sources": [
+        {{"url": "source_url", "title": "Source Name", "relevance": "Why this source is reliable"}}
+    ],
+    "confidence": 0.95,
+    "notes": "Additional context about the contact"
+}}"""
+
+        try:
+            # Rate limiting
+            time.sleep(self.rate_limit_delay)
+            
+            # Make API call
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.1,  # Very low temperature for accuracy
+            )
+            
+            # Extract response
+            raw_response = response.choices[0].message.content
+            
+            # Parse single contact response
+            contact = self._parse_response(' '.join(query_parts), raw_response)
+            
+            # If we found info, merge with existing
+            if contact and (contact.primary_email or contact.primary_phone):
+                # Keep existing info if better
+                if existing_email and not contact.primary_email:
+                    contact.primary_email = existing_email
+                if existing_phone and not contact.primary_phone:
+                    contact.primary_phone = existing_phone
+                
+                # Ensure we have the original name/company if found info is generic
+                if name and (not contact.name or contact.name == "Unknown"):
+                    contact.name = name
+                if company and (not contact.company or contact.company == "Unknown"):
+                    contact.company = company
+                
+                return contact
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error enriching contact {name or company}: {str(e)}")
+            return None

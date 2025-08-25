@@ -27,6 +27,7 @@ from phone_verifier import PhoneVerificationService
 from data_exporter import DataExporter
 from enhanced_search import EnhancedSearchStrategy
 from output_selector import OutputSelector
+from contact_enricher import ContactParser, ContactEnricher, EnrichmentExporter
 
 # Setup logging
 logging.basicConfig(
@@ -838,6 +839,111 @@ def display_results_summary(results: List, csv_file: str = None, json_file: str 
         console.print(files_table)
         console.print(f"\n[yellow]⚠️  Always verify contact information using the provided sources before use![/yellow]")
 
+def run_enrichment_mode(finder: ContactFinder):
+    """Run contact enrichment mode"""
+    console.print("\n[bold cyan]📈 Contact Enrichment Mode[/bold cyan]")
+    console.print("[dim]Upload a list of contacts to find missing emails and phone numbers[/dim]\n")
+    
+    # Get file path
+    file_path = Prompt.ask("Enter path to contact file (CSV, Excel, or JSON)")
+    
+    if not Path(file_path).exists():
+        console.print(f"[red]File not found: {file_path}[/red]")
+        return
+    
+    try:
+        # Parse contacts
+        console.print(f"\n[cyan]Parsing contacts from {file_path}...[/cyan]")
+        contacts = ContactParser.parse_file(file_path)
+        
+        if not contacts:
+            console.print("[yellow]No contacts found in file[/yellow]")
+            return
+        
+        console.print(f"[green]✓ Found {len(contacts)} contacts[/green]")
+        
+        # Show preview
+        table = Table(title="Contact Preview (First 5)")
+        table.add_column("Name", style="cyan")
+        table.add_column("Company", style="magenta")
+        table.add_column("Has Email", style="green")
+        table.add_column("Has Phone", style="yellow")
+        
+        for contact in contacts[:5]:
+            table.add_row(
+                contact.name or "-",
+                contact.company or "-",
+                "✓" if contact.email else "✗",
+                "✓" if contact.phone else "✗"
+            )
+        
+        console.print(table)
+        
+        # Count missing info
+        missing_email = sum(1 for c in contacts if not c.email)
+        missing_phone = sum(1 for c in contacts if not c.phone)
+        missing_both = sum(1 for c in contacts if not c.email and not c.phone)
+        
+        console.print(f"\n[bold]Enrichment Opportunities:[/bold]")
+        console.print(f"  • Missing emails: {missing_email}")
+        console.print(f"  • Missing phones: {missing_phone}")
+        console.print(f"  • Missing both: {missing_both}")
+        
+        if missing_email == 0 and missing_phone == 0:
+            console.print("\n[green]All contacts already have email and phone![/green]")
+            return
+        
+        # Ask to proceed
+        if not Confirm.ask(f"\nEnrich {missing_email + missing_phone} missing fields?"):
+            return
+        
+        # Check for resume
+        resume = False
+        if Path("enrichment_state.json").exists():
+            resume = Confirm.ask("Found previous enrichment session. Resume?")
+        
+        # Initialize enricher
+        enricher = ContactEnricher(
+            perplexity_client=finder.perplexity,
+            rate_limit_delay=finder.config.rate_limit_delay
+        )
+        
+        # Run enrichment
+        console.print("\n[bold green]Starting enrichment...[/bold green]")
+        results = enricher.enrich_contacts(contacts, resume=resume)
+        
+        # Export results
+        if results:
+            console.print("\n[bold]Export Options:[/bold]")
+            format_choice = questionary.select(
+                "Choose export format:",
+                choices=["CSV", "Excel", "JSON", "All formats"]
+            ).ask()
+            
+            exporter = EnrichmentExporter()
+            
+            if format_choice == "All formats":
+                csv_file = exporter.export_results(results, "csv")
+                excel_file = exporter.export_results(results, "excel")
+                json_file = exporter.export_results(results, "json")
+                
+                console.print("\n[bold green]✓ Exported enriched contacts:[/bold green]")
+                console.print(f"  • CSV: {csv_file}")
+                console.print(f"  • Excel: {excel_file}")
+                console.print(f"  • JSON: {json_file}")
+            else:
+                export_format = format_choice.lower()
+                export_file = exporter.export_results(results, export_format)
+                console.print(f"\n[bold green]✓ Exported to: {export_file}[/bold green]")
+            
+            # Clean up state file
+            if Path("enrichment_state.json").exists() and Confirm.ask("\nDelete enrichment state file?"):
+                Path("enrichment_state.json").unlink()
+    
+    except Exception as e:
+        console.print(f"[red]Error during enrichment: {str(e)}[/red]")
+        logger.error(f"Enrichment error: {str(e)}", exc_info=True)
+
 def show_interactive_help():
     """Show interactive help for common issues"""
     console.clear()
@@ -930,6 +1036,7 @@ def run_interactive_mode():
             choices=[
                 "🔍 Search for contacts",
                 "📋 Use search templates",
+                "📈 Enrich existing contacts",
                 "🔐 Update API keys",
                 "📚 View examples",
                 "🆘 Get help",
@@ -979,6 +1086,9 @@ def run_interactive_mode():
                     output_selector.show_file_access_guide(exported_files)
             else:
                 console.print("[yellow]No queries entered.[/yellow]")
+        
+        elif "Enrich existing contacts" in action:
+            run_enrichment_mode(finder)
         
         elif "Update API keys" in action:
             setup_api_keys_interactive()
@@ -1065,6 +1175,9 @@ def main():
     parser.add_argument('--perplexity-only', action='store_true', help='Use only Perplexity API (no verification services)')
     parser.add_argument('--interactive', '-i', action='store_true', help='Run in interactive mode with templates and wizard')
     parser.add_argument('--help-me', action='store_true', help='Get interactive help for common issues')
+    parser.add_argument('--enrich', help='Enrich contacts from a CSV/Excel/JSON file')
+    parser.add_argument('--enrich-format', choices=['csv', 'excel', 'json', 'all'], default='csv',
+                       help='Export format for enriched contacts (default: csv)')
     
     args = parser.parse_args()
     
@@ -1074,8 +1187,57 @@ def main():
         return
     
     # Interactive mode
-    if args.interactive or (not args.queries and not args.file and not args.setup and not args.clear):
+    if args.interactive or (not args.queries and not args.file and not args.setup and not args.clear and not args.enrich):
         run_interactive_mode()
+        return
+    
+    # Enrichment mode
+    if args.enrich:
+        try:
+            finder = ContactFinder(args.config)
+            
+            # Parse contacts from file
+            console.print(f"[cyan]Loading contacts from {args.enrich}...[/cyan]")
+            contacts = ContactParser.parse_file(args.enrich)
+            
+            if not contacts:
+                console.print("[red]No contacts found in file[/red]")
+                return
+            
+            console.print(f"[green]Found {len(contacts)} contacts[/green]")
+            
+            # Check for resume
+            resume = args.resume or (Path("enrichment_state.json").exists() and 
+                                    Confirm.ask("Found previous enrichment. Resume?"))
+            
+            # Initialize enricher
+            enricher = ContactEnricher(
+                perplexity_client=finder.perplexity,
+                rate_limit_delay=finder.config.rate_limit_delay
+            )
+            
+            # Run enrichment
+            results = enricher.enrich_contacts(contacts, resume=resume)
+            
+            # Export results
+            if results:
+                exporter = EnrichmentExporter()
+                
+                if args.enrich_format == "all":
+                    csv_file = exporter.export_results(results, "csv")
+                    excel_file = exporter.export_results(results, "excel")
+                    json_file = exporter.export_results(results, "json")
+                    console.print("\n[bold green]✓ Exported enriched contacts:[/bold green]")
+                    console.print(f"  • CSV: {csv_file}")
+                    console.print(f"  • Excel: {excel_file}")
+                    console.print(f"  • JSON: {json_file}")
+                else:
+                    export_file = exporter.export_results(results, args.enrich_format)
+                    console.print(f"\n[bold green]✓ Exported to: {export_file}[/bold green]")
+        
+        except Exception as e:
+            console.print(f"[red]Error: {str(e)}[/red]")
+            logger.error(f"Enrichment error: {str(e)}", exc_info=True)
         return
     
     # Setup mode

@@ -197,6 +197,52 @@ You can also set API keys using environment variables:
 
 ## Usage
 
+### 📈 NEW: Contact Enrichment Feature
+
+Upload an existing list of contacts to find missing email addresses and phone numbers!
+
+#### Interactive Enrichment Mode
+```bash
+python3 perplexity_contact_finder.py --interactive
+# Select "📈 Enrich existing contacts" from the menu
+```
+
+#### Command-Line Enrichment
+```bash
+# Enrich contacts from a CSV file
+python3 perplexity_contact_finder.py --enrich contacts.csv
+
+# Enrich with specific export format
+python3 perplexity_contact_finder.py --enrich contacts.csv --enrich-format excel
+
+# Resume interrupted enrichment
+python3 perplexity_contact_finder.py --enrich contacts.csv --resume
+
+# Export in all formats
+python3 perplexity_contact_finder.py --enrich contacts.csv --enrich-format all
+```
+
+#### Supported Input Formats
+- **CSV**: Standard CSV with headers (name, company, email, phone, etc.)
+- **Excel**: .xlsx or .xls files
+- **JSON**: Array of contact objects
+
+#### Sample CSV Format
+```csv
+name,company,title,email,phone,city,state
+John Smith,Acme Corp,CEO,,,San Francisco,CA
+Sarah Johnson,Tech Inc,CTO,sarah@example.com,,Austin,TX
+```
+
+The enricher will:
+- ✅ Find missing email addresses
+- ✅ Find missing phone numbers
+- ✅ Preserve all original data
+- ✅ Export side-by-side comparison
+- ✅ Track confidence scores
+- ✅ Provide source citations
+- ✅ Support resume for large lists
+
 ### Basic Usage
 Search for a single contact:
 ```bash

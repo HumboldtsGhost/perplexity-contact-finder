@@ -13,6 +13,7 @@ class Config:
     # Default API keys (can be overridden)
     DEFAULT_KEYS = {
         'perplexity': None,
+        'anthropic': None,  # For AI-powered query generation
         'hunter': None,
         'zerobounce': None,
         'numverify': None,
@@ -50,6 +51,7 @@ class Config:
         """Load API keys from environment variables"""
         env_mapping = {
             'PERPLEXITY_API_KEY': 'perplexity',
+            'ANTHROPIC_API_KEY': 'anthropic',
             'HUNTER_API_KEY': 'hunter',
             'ZEROBOUNCE_API_KEY': 'zerobounce',
             'NUMVERIFY_API_KEY': 'numverify',
@@ -96,6 +98,7 @@ class Config:
         sample_data = {
             'api_keys': {
                 'perplexity': 'your-perplexity-api-key-here',
+                'anthropic': 'your-anthropic-api-key-here',
                 'hunter': 'your-hunter-api-key-here',
                 'zerobounce': 'your-zerobounce-api-key-here',
                 'numverify': 'your-numverify-api-key-here',
@@ -146,6 +149,31 @@ class Config:
         print("\nSettings:")
         for setting, value in self.settings.items():
             print(f"  {setting}: {value}")
+    
+    # Convenience properties
+    @property
+    def perplexity_api_key(self):
+        return self.api_keys.get('perplexity')
+    
+    @property
+    def anthropic_api_key(self):
+        return self.api_keys.get('anthropic')
+    
+    @property
+    def perplexity_model(self):
+        return self.settings.get('perplexity_model', 'sonar-pro')
+    
+    @property
+    def anthropic_model(self):
+        return self.settings.get('anthropic_model', 'claude-3-haiku-20240307')
+    
+    @property
+    def rate_limit_delay(self):
+        return self.settings.get('rate_limit_delay', 1.0)
+    
+    def set_setting(self, key: str, value):
+        """Set a configuration setting"""
+        self.settings[key] = value
 
 
 if __name__ == "__main__":
