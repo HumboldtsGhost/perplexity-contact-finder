@@ -48,12 +48,18 @@ def init_task_db():
     c.execute('''CREATE TABLE IF NOT EXISTS contacts (
         id TEXT PRIMARY KEY,
         name TEXT,
+        title TEXT,
         company TEXT,
         email TEXT,
         phone TEXT,
+        confidence REAL,
+        alternate_emails TEXT,
+        alternate_phones TEXT,
+        sources TEXT,
         status TEXT DEFAULT 'new',
         assigned_to TEXT,
-        imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        date_found TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     
     c.execute('''CREATE TABLE IF NOT EXISTS tasks (
@@ -212,8 +218,7 @@ HTML_TEMPLATE = '''
                         </label>
                         <textarea id="search-description" rows="3" 
                                   placeholder="Example: Find principals and operations managers at elementary schools in Sacramento California"
-                                  class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
-                        </textarea>
+                                  class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"></textarea>
                     </div>
                     
                     <div>
@@ -222,8 +227,7 @@ HTML_TEMPLATE = '''
                         </label>
                         <textarea id="company-list" rows="3" 
                                   placeholder="Enter company names separated by commas, or leave blank for general search"
-                                  class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
-                        </textarea>
+                                  class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"></textarea>
                     </div>
                     
                     <div class="grid md:grid-cols-2 gap-4">
@@ -278,6 +282,19 @@ HTML_TEMPLATE = '''
                         <strong>AI Analysis:</strong> <span id="industry-type">Analyzing...</span>
                     </p>
                     <p class="text-sm text-gray-600 mt-1" id="ai-insight"></p>
+                </div>
+                
+                <!-- Companies Found Section (for manual search) -->
+                <div id="companies-found-section" class="hidden mb-6">
+                    <h3 class="font-bold text-lg mb-3">
+                        <i class="fas fa-building mr-2"></i>Companies Found: <span id="companies-count">0</span>
+                    </h3>
+                    <div id="companies-list" class="bg-gray-50 p-4 rounded-lg max-h-64 overflow-y-auto mb-4">
+                        <!-- Companies will be listed here -->
+                    </div>
+                    <button onclick="findMoreCompanies()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-search-plus mr-2"></i>Find More Companies
+                    </button>
                 </div>
 
                 <div class="grid md:grid-cols-2 gap-6">
@@ -426,9 +443,7 @@ HTML_TEMPLATE = '''
                     <button onclick="cancelSearch()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
                         <i class="fas fa-stop mr-2"></i>Cancel
                     </button>
-                    <button onclick="showLiveResults()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        <i class="fas fa-eye mr-2"></i>View Results So Far
-                    </button>
+<!-- Results show automatically as they come in -->
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-lg">
@@ -454,12 +469,29 @@ HTML_TEMPLATE = '''
                 </div>
                 
                 <!-- Live Results Preview -->
-                <div id="live-results-preview" class="mt-6 hidden">
-                    <h3 class="font-bold mb-2">Latest Results:</h3>
-                    <div class="max-h-64 overflow-y-auto border rounded p-2">
-                        <div id="live-results-list" class="space-y-2">
-                            <!-- Live results appear here -->
-                        </div>
+                <div id="live-results-preview" class="mt-6">
+                    <h3 class="font-bold mb-2">
+                        <i class="fas fa-list mr-2"></i>Results Found So Far:
+                    </h3>
+                    <div class="max-h-96 overflow-y-auto border rounded-lg bg-gray-50 p-4">
+                        <table class="w-full">
+                            <thead class="sticky top-0 bg-gray-100">
+                                <tr class="text-left text-sm text-gray-700">
+                                    <th class="p-2">Name</th>
+                                    <th class="p-2">Title</th>
+                                    <th class="p-2">Company</th>
+                                    <th class="p-2">Email</th>
+                                    <th class="p-2">Phone</th>
+                                </tr>
+                            </thead>
+                            <tbody id="live-results-list" class="divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="5" class="p-4 text-center text-gray-500">
+                                        Searching... Results will appear here as they are found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -607,6 +639,7 @@ HTML_TEMPLATE = '''
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="px-4 py-2 text-left">Name</th>
+                                <th class="px-4 py-2 text-left">Title</th>
                                 <th class="px-4 py-2 text-left">Company</th>
                                 <th class="px-4 py-2 text-left">Email</th>
                                 <th class="px-4 py-2 text-left">Phone</th>
@@ -784,10 +817,11 @@ HTML_TEMPLATE = '''
             }
             
             contacts.forEach(contact => {
-                const date = new Date(contact.date_found).toLocaleDateString();
+                const date = new Date(contact.date_found || contact.imported_at).toLocaleDateString();
                 list.innerHTML += `
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2">${contact.name || '-'}</td>
+                        <td class="px-4 py-2">${contact.title || '-'}</td>
                         <td class="px-4 py-2">${contact.company || '-'}</td>
                         <td class="px-4 py-2">
                             ${contact.email || '-'}
@@ -869,6 +903,14 @@ HTML_TEMPLATE = '''
             document.getElementById('step-manual').classList.remove('hidden');
         }
 
+        // Store search context for finding more companies
+        let searchContext = {
+            description: '',
+            location: '',
+            industry: '',
+            offset: 0
+        };
+        
         async function processManualSearch() {
             const description = document.getElementById('search-description').value;
             const companyList = document.getElementById('company-list').value;
@@ -880,14 +922,22 @@ HTML_TEMPLATE = '''
                 return;
             }
             
+            // Store search context
+            searchContext = {
+                description: description,
+                location: location,
+                industry: industryType,
+                offset: 0
+            };
+            
             // Parse companies if provided
             if (companyList.trim()) {
                 companies = companyList.split(',').map(c => c.trim()).filter(c => c);
             } else {
-                companies = []; // Will do general search
+                companies = []; // Will search for companies
             }
             
-            // Send to AI for analysis
+            // First, get role suggestions and initial companies
             try {
                 const response = await fetch('/api/analyze-manual-search', {
                     method: 'POST',
@@ -896,13 +946,33 @@ HTML_TEMPLATE = '''
                         description: description,
                         companies: companies,
                         industry: industryType,
-                        location: location
+                        location: location,
+                        find_companies: companies.length === 0,  // Find companies if none provided
+                        offset: 0
                     })
                 });
                 
                 const data = await response.json();
                 
-                // Process AI suggestions (similar to upload flow)
+                // Store the companies found by Perplexity
+                if (data.companies && data.companies.length > 0) {
+                    companies = data.companies;
+                    searchContext.offset = companies.length;
+                    
+                    // Show companies found section
+                    document.getElementById('companies-found-section').classList.remove('hidden');
+                    document.getElementById('companies-count').textContent = companies.length;
+                    
+                    // Display companies list
+                    const companiesList = document.getElementById('companies-list');
+                    companiesList.innerHTML = companies.map((company, idx) => 
+                        `<div class="mb-2">
+                            <span class="font-medium">${idx + 1}.</span> ${company}
+                        </div>`
+                    ).join('');
+                }
+                
+                // Process AI suggestions
                 document.getElementById('industry-type').textContent = data.industry_type || 'General Search';
                 document.getElementById('ai-insight').textContent = data.insights || '';
                 
@@ -917,7 +987,7 @@ HTML_TEMPLATE = '''
                 
                 const secondaryContainer = document.getElementById('secondary-roles');
                 secondaryContainer.innerHTML = '';
-                if (data.secondary_roles) {
+                if (data.secondary_roles && data.secondary_roles.length > 0) {
                     data.secondary_roles.forEach(role => {
                         secondaryContainer.innerHTML += createRoleCard(role, 'secondary');
                     });
@@ -930,6 +1000,56 @@ HTML_TEMPLATE = '''
             } catch (error) {
                 console.error('Error analyzing search:', error);
                 alert('Error analyzing your search request');
+            }
+        }
+        
+        async function findMoreCompanies() {
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Searching...';
+            
+            try {
+                const response = await fetch('/api/find-more-companies', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        description: searchContext.description,
+                        location: searchContext.location,
+                        industry: searchContext.industry,
+                        offset: searchContext.offset,
+                        existing_companies: companies
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.companies && data.companies.length > 0) {
+                    // Add new companies to the list
+                    companies = companies.concat(data.companies);
+                    searchContext.offset = companies.length;
+                    
+                    // Update display
+                    document.getElementById('companies-count').textContent = companies.length;
+                    
+                    // Display updated companies list
+                    const companiesList = document.getElementById('companies-list');
+                    companiesList.innerHTML = companies.map((company, idx) => 
+                        `<div class="mb-2">
+                            <span class="font-medium">${idx + 1}.</span> ${company}
+                        </div>`
+                    ).join('');
+                    
+                    // Scroll to show new companies
+                    companiesList.scrollTop = companiesList.scrollHeight;
+                } else {
+                    alert('No additional companies found. Try modifying your search criteria.');
+                }
+            } catch (error) {
+                console.error('Error finding more companies:', error);
+                alert('Error searching for more companies');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-search-plus mr-2"></i>Find More Companies';
             }
         }
 
@@ -1336,10 +1456,7 @@ HTML_TEMPLATE = '''
             }
         }
         
-        function showLiveResults() {
-            const preview = document.getElementById('live-results-preview');
-            preview.classList.toggle('hidden');
-        }
+        // Results now show automatically, no need for toggle button
 
         async function pollProgress() {
             if (isCancelled) return;
@@ -1358,24 +1475,34 @@ HTML_TEMPLATE = '''
             document.getElementById('phones-found').textContent = data.phones_found;
             document.getElementById('current-search').textContent = data.current_search || 'Processing...';
             
-            // Update live results preview
+            // Update live results preview - show ALL results as table rows
             if (data.results && data.results.length > 0) {
                 const liveList = document.getElementById('live-results-list');
-                liveList.innerHTML = '';
                 
-                // Show last 5 results
-                const recentResults = data.results.slice(-5);
-                recentResults.forEach(contact => {
+                // Clear the "Searching..." message on first result
+                if (liveList.querySelector('.text-gray-500')) {
+                    liveList.innerHTML = '';
+                }
+                
+                // Display ALL results as table rows
+                liveList.innerHTML = '';
+                data.results.forEach(contact => {
                     liveList.innerHTML += `
-                        <div class="bg-gray-50 p-2 rounded">
-                            <p class="font-semibold">${contact.name || 'Unknown'} - ${contact.company}</p>
-                            <p class="text-sm text-gray-600">
-                                ${contact.email ? '✉️ ' + contact.email : ''} 
-                                ${contact.phone ? '📞 ' + contact.phone : ''}
-                            </p>
-                        </div>
+                        <tr class="hover:bg-gray-100">
+                            <td class="p-2">${contact.name || 'Unknown'}</td>
+                            <td class="p-2">${contact.title || '-'}</td>
+                            <td class="p-2">${contact.company || '-'}</td>
+                            <td class="p-2 text-sm">${contact.email || '-'}</td>
+                            <td class="p-2 text-sm">${contact.phone || '-'}</td>
+                        </tr>
                     `;
                 });
+                
+                // Auto-scroll to show latest results
+                const container = document.querySelector('#live-results-preview .overflow-y-auto');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
             }
             
             if (data.status === 'completed' || data.status === 'cancelled') {
@@ -1777,12 +1904,12 @@ def suggest_roles():
 
 @app.route('/api/analyze-manual-search', methods=['POST'])
 def analyze_manual_search():
-    """Analyze manual search input and suggest roles"""
+    """Analyze manual search input and find companies via Perplexity"""
     global enrichment_engine
     
     data = request.json
     description = data.get('description', '')
-    companies = data.get('companies', [])
+    company_list = data.get('companies', [])
     industry = data.get('industry', '')
     location = data.get('location', '')
     
@@ -1791,50 +1918,216 @@ def analyze_manual_search():
         config = Config()
         enrichment_engine = SmartEnrichmentEngine(config)
     
-    # Let AI understand the requirements
-    requirements = enrichment_engine.ai_assistant.understand_requirements(
-        user_input=description,
-        companies=companies if companies else None
-    )
+    # Parse any manually entered companies
+    companies = []
+    if company_list and isinstance(company_list, str):
+        companies = [c.strip() for c in company_list.split(',') if c.strip()]
+    elif isinstance(company_list, list):
+        companies = company_list
     
-    # If no specific companies, generate based on description
-    if not companies:
-        # Extract implied search from description
-        if 'schools' in description.lower() or 'principal' in description.lower():
-            industry = 'schools'
-        elif 'hospital' in description.lower() or 'healthcare' in description.lower():
-            industry = 'healthcare'
+    # Check if we should find companies
+    find_companies = data.get('find_companies', False)
+    offset = data.get('offset', 0)
+    
+    # If no specific companies provided or explicitly asked to find companies
+    if (not companies and description) or find_companies:
+        # Build a search query to find relevant companies
+        search_query = f"List specific company/organization names: {description}"
+        if location:
+            search_query += f" in {location}"
         
-        # For general searches, we'll generate queries differently
-        companies = ['General Search']
+        # Use Perplexity to find actual company names
+        try:
+            from perplexity_client import PerplexityClient
+            perplexity = PerplexityClient(
+                api_key=enrichment_engine.config.perplexity_api_key,
+                model=enrichment_engine.config.perplexity_model
+            )
+            
+            # Search for companies - request more to account for filtering
+            prompt = f"""Find and list specific company/organization names that match this criteria:
+            {description}
+            {f'Location: {location}' if location else ''}
+            
+            Return a list of actual company/organization names, one per line.
+            Include 15-20 specific businesses/organizations.
+            Do not include:
+            - Generic descriptions
+            - Explanatory text
+            - Category names
+            Just list the actual business names."""
+            
+            response = perplexity.client.chat.completions.create(
+                model=perplexity.model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            # Parse company names from response
+            company_text = response.choices[0].message.content
+            potential_companies = [line.strip() for line in company_text.split('\n') if line.strip()]
+            
+            # Clean up the list (remove bullets, numbers, etc.)
+            for line in potential_companies:
+                # Remove common list markers
+                import re
+                cleaned = re.sub(r'^[\d\.\)\-\*\•\·]+\s*', '', line.strip())
+                # Remove trailing punctuation
+                cleaned = cleaned.rstrip('.,;:')
+                
+                # Filter out non-company lines
+                if (cleaned and 
+                    len(cleaned) > 2 and 
+                    not any(skip in cleaned.lower() for skip in [
+                        'the following', 'here are', 'list of', 'companies include',
+                        'organizations include', 'some examples', 'such as'
+                    ])):
+                    companies.append(cleaned)
+                    if len(companies) >= 20:  # Get up to 20 companies
+                        break
+        except Exception as e:
+            print(f"Error finding companies: {e}")
+            # Fall back to empty list
+            companies = []
+    
+    # Determine industry from description if not provided
+    if not industry and description:
+        if any(word in description.lower() for word in ['school', 'education', 'principal', 'teacher']):
+            industry = 'education'
+        elif any(word in description.lower() for word in ['hospital', 'medical', 'healthcare', 'clinic']):
+            industry = 'healthcare'
+        elif any(word in description.lower() for word in ['restaurant', 'food', 'dining', 'cafe']):
+            industry = 'hospitality'
+        elif any(word in description.lower() for word in ['software', 'tech', 'IT', 'developer']):
+            industry = 'technology'
+        else:
+            industry = 'general'
     
     # Get role suggestions based on context
-    if companies and companies != ['General Search']:
-        suggestions = enrichment_engine.ai_assistant.suggest_roles_for_industry(companies)
-    else:
-        # Use the requirements to build suggestions
-        suggestions = {
-            'industry_type': industry or 'General Business',
-            'primary_roles': [],
-            'secondary_roles': [],
-            'insights': f'Based on your search: "{description}"'
+    suggestions = {
+        'industry_type': industry.title() if industry else 'General Business',
+        'companies': companies,  # Include the found companies
+        'primary_roles': [],
+        'secondary_roles': [],
+        'insights': f'Found {len(companies)} companies matching your criteria' if companies else 'Ready to search'
+    }
+    
+    # Define role suggestions based on industry
+    role_templates = {
+        'education': {
+            'primary': [
+                ('Principal', 'Primary decision maker for schools'),
+                ('Assistant Principal', 'Secondary administrator'),
+                ('Operations Manager', 'Handles school operations')
+            ],
+            'secondary': [
+                ('District Administrator', 'District level contact'),
+                ('Business Manager', 'Financial decisions')
+            ]
+        },
+        'healthcare': {
+            'primary': [
+                ('Administrator', 'Facility decision maker'),
+                ('Medical Director', 'Clinical leadership'),
+                ('Practice Manager', 'Operations management')
+            ],
+            'secondary': [
+                ('Operations Director', 'Operational decisions'),
+                ('Business Manager', 'Financial management')
+            ]
+        },
+        'general': {
+            'primary': [
+                ('Owner', 'Business owner and primary decision maker'),
+                ('President', 'Executive leadership'),
+                ('CEO', 'Chief executive officer')
+            ],
+            'secondary': [
+                ('General Manager', 'Overall operations'),
+                ('Operations Manager', 'Day-to-day management')
+            ]
         }
-        
-        # Add roles from requirements
-        for role in requirements.get('roles', [])[:3]:
-            suggestions['primary_roles'].append({
-                'role': role,
-                'reason': f'Key role for {industry or "your search"}'
-            })
-        
-        # Add some secondary roles
-        if 'manager' not in str(requirements.get('roles', [])).lower():
-            suggestions['secondary_roles'].append({
-                'role': 'Manager',
-                'reason': 'General management contact'
-            })
+    }
+    
+    # Get appropriate roles
+    template = role_templates.get(industry, role_templates['general'])
+    
+    for role, reason in template['primary']:
+        suggestions['primary_roles'].append({'role': role, 'reason': reason})
+    
+    for role, reason in template['secondary']:
+        suggestions['secondary_roles'].append({'role': role, 'reason': reason})
     
     return jsonify(suggestions)
+
+@app.route('/api/find-more-companies', methods=['POST'])
+def find_more_companies():
+    """Find additional companies matching the search criteria"""
+    global enrichment_engine
+    
+    data = request.json
+    description = data.get('description', '')
+    location = data.get('location', '')
+    existing_companies = data.get('existing_companies', [])
+    offset = data.get('offset', 0)
+    
+    if not enrichment_engine:
+        config = Config()
+        enrichment_engine = SmartEnrichmentEngine(config)
+    
+    new_companies = []
+    
+    try:
+        from perplexity_client import PerplexityClient
+        perplexity = PerplexityClient(
+            api_key=enrichment_engine.config.perplexity_api_key,
+            model=enrichment_engine.config.perplexity_model
+        )
+        
+        # Ask for more companies, excluding ones we already have
+        prompt = f"""Find MORE specific company/organization names that match this criteria:
+        {description}
+        {f'Location: {location}' if location else ''}
+        
+        We already have {len(existing_companies)} companies. Find DIFFERENT ones.
+        {f'Exclude these: {", ".join(existing_companies[:10])}' if existing_companies else ''}
+        
+        Return a list of additional company/organization names, one per line.
+        Include 10-15 MORE specific businesses/organizations.
+        Only list actual business names, no descriptions."""
+        
+        response = perplexity.client.chat.completions.create(
+            model=perplexity.model,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        # Parse company names from response
+        company_text = response.choices[0].message.content
+        potential_companies = [line.strip() for line in company_text.split('\n') if line.strip()]
+        
+        # Clean up and filter
+        for line in potential_companies:
+            import re
+            cleaned = re.sub(r'^[\d\.\)\-\*\•\·]+\s*', '', line.strip())
+            cleaned = cleaned.rstrip('.,;:')
+            
+            # Filter out non-company lines and duplicates
+            if (cleaned and 
+                len(cleaned) > 2 and
+                cleaned not in existing_companies and
+                cleaned not in new_companies and
+                not any(skip in cleaned.lower() for skip in [
+                    'the following', 'here are', 'list of', 'companies include',
+                    'organizations include', 'some examples', 'such as', 'more companies'
+                ])):
+                new_companies.append(cleaned)
+                if len(new_companies) >= 15:
+                    break
+                    
+    except Exception as e:
+        print(f"Error finding more companies: {e}")
+        return jsonify({'error': str(e)}), 500
+    
+    return jsonify({'companies': new_companies})
 
 @app.route('/api/generate-queries', methods=['POST'])
 def generate_queries():
@@ -1844,8 +2137,8 @@ def generate_queries():
     roles = data.get('roles', [])
     
     queries = []
-    for company in companies[:100]:  # Limit for demo
-        for role in roles[:2]:  # Max 2 roles per company
+    for company in companies:  # No limit - process all companies
+        for role in roles:  # Process all selected roles
             queries.append({
                 'company': company,
                 'role': role,
@@ -1943,8 +2236,24 @@ def run_enrichment(job_id, queries):
             if contacts:
                 for contact in contacts:
                     # Convert ContactInfo to dict for JSON response
+                    # Extract title from name if present
+                    name = contact.name or f"{contact.company} Contact"
+                    title = ''
+                    if ' - ' in name:
+                        name_parts = name.split(' - ')
+                        name = name_parts[0]
+                        title = name_parts[1]
+                    elif '(' in name and ')' in name:
+                        import re
+                        match = re.match(r'^(.*?)\s*\((.*?)\)', name)
+                        if match:
+                            name = match.group(1).strip()
+                            title = match.group(2).strip()
+                    
                     result = {
-                        'name': contact.name or f"{contact.company} Contact",
+                        'id': str(uuid.uuid4()),
+                        'name': name,
+                        'title': title or contact.title if hasattr(contact, 'title') else '',
                         'company': contact.company or company,
                         'email': contact.primary_email or '',
                         'phone': contact.primary_phone or '',
@@ -1954,6 +2263,24 @@ def run_enrichment(job_id, queries):
                         'alternate_phones': contact.alternate_phones,
                         'notes': contact.notes
                     }
+                    
+                    # Save to database immediately
+                    try:
+                        conn = sqlite3.connect('tasks.db')
+                        c = conn.cursor()
+                        c.execute('''INSERT OR REPLACE INTO contacts 
+                                     (id, name, title, company, email, phone, confidence, 
+                                      alternate_emails, alternate_phones, sources, imported_at)
+                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))''',
+                                  (result['id'], result['name'], result['title'], result['company'],
+                                   result['email'], result['phone'], result['confidence'],
+                                   json.dumps(result['alternate_emails']) if result['alternate_emails'] else '',
+                                   json.dumps(result['alternate_phones']) if result['alternate_phones'] else '',
+                                   json.dumps(result['sources']) if result['sources'] else ''))
+                        conn.commit()
+                        conn.close()
+                    except Exception as db_error:
+                        print(f"Database save error: {db_error}")
                     
                     results.append(result)
                     job_status[job_id]['contacts_found'] += 1

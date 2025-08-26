@@ -354,19 +354,157 @@ async def export_contacts(request: ExportRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/analyze-manual-search")
+async def analyze_manual_search(request: dict):
+    """Analyze manual search input and suggest roles"""
+    description = request.get('description', '')
+    companies = request.get('companies', [])
+    industry = request.get('industry', '')
+    location = request.get('location', '')
+    
+    # Determine industry type from description
+    industry_keywords = {
+        'tech': ['software', 'tech', 'IT', 'SaaS', 'app', 'digital', 'web'],
+        'healthcare': ['medical', 'health', 'hospital', 'clinic', 'doctor', 'pharma'],
+        'retail': ['retail', 'store', 'shop', 'ecommerce', 'sales'],
+        'manufacturing': ['manufacturing', 'factory', 'production', 'industrial'],
+        'finance': ['finance', 'bank', 'investment', 'insurance', 'accounting'],
+        'construction': ['construction', 'building', 'contractor', 'real estate'],
+        'hospitality': ['restaurant', 'hotel', 'hospitality', 'food', 'dining'],
+        'education': ['school', 'university', 'education', 'training', 'academy'],
+        'nonprofit': ['nonprofit', 'charity', 'foundation', 'NGO', 'volunteer'],
+        'government': ['government', 'municipal', 'federal', 'state', 'public sector']
+    }
+    
+    detected_industry = industry or 'general'
+    for ind, keywords in industry_keywords.items():
+        if any(kw.lower() in description.lower() for kw in keywords):
+            detected_industry = ind
+            break
+    
+    # Define role suggestions based on industry
+    role_suggestions = {
+        'tech': {
+            'primary_roles': [
+                {'role': 'CEO', 'reason': 'Primary decision maker for technology companies'},
+                {'role': 'CTO', 'reason': 'Technical decision maker and product leader'},
+                {'role': 'VP of Engineering', 'reason': 'Manages engineering teams and technical roadmap'}
+            ],
+            'secondary_roles': [
+                {'role': 'Head of Sales', 'reason': 'Drives revenue and customer acquisition'},
+                {'role': 'Product Manager', 'reason': 'Defines product strategy and features'}
+            ]
+        },
+        'healthcare': {
+            'primary_roles': [
+                {'role': 'Administrator', 'reason': 'Manages healthcare facility operations'},
+                {'role': 'Medical Director', 'reason': 'Oversees clinical operations'},
+                {'role': 'Practice Manager', 'reason': 'Handles day-to-day operations'}
+            ],
+            'secondary_roles': [
+                {'role': 'Chief Medical Officer', 'reason': 'Senior medical executive'},
+                {'role': 'Operations Manager', 'reason': 'Manages operational efficiency'}
+            ]
+        },
+        'general': {
+            'primary_roles': [
+                {'role': 'Owner', 'reason': 'Primary decision maker and business owner'},
+                {'role': 'President', 'reason': 'Senior executive responsible for operations'},
+                {'role': 'CEO', 'reason': 'Chief Executive Officer and primary leader'}
+            ],
+            'secondary_roles': [
+                {'role': 'General Manager', 'reason': 'Manages overall business operations'},
+                {'role': 'Operations Manager', 'reason': 'Handles day-to-day operations'}
+            ]
+        }
+    }
+    
+    # Get appropriate roles for the detected industry
+    roles = role_suggestions.get(detected_industry, role_suggestions['general'])
+    
+    return {
+        'industry_type': detected_industry.title(),
+        'insights': f'Based on your search for {detected_industry} companies, here are recommended roles to target',
+        'primary_roles': roles['primary_roles'],
+        'secondary_roles': roles['secondary_roles']
+    }
+
+@app.post("/api/generate-queries")
+async def generate_queries(request: dict):
+    """Generate search queries from companies and roles"""
+    companies = request.get('companies', [])
+    roles = request.get('roles', [])
+    
+    if not roles:
+        raise HTTPException(status_code=400, detail="No roles selected")
+    
+    # Generate queries combining each company with each role
+    queries_list = []
+    for company in companies if companies else ['']:
+        for role in roles:
+            if company:
+                # Specific company query
+                query = f"{role} at {company} contact email phone"
+            else:
+                # General search query (for manual search without specific companies)
+                query = f"{role} contact information email phone"
+            
+            queries_list.append({
+                'company': company or 'General Search',
+                'role': role,
+                'query': query
+            })
+    
+    return {
+        "queries": queries_list,
+        "total": len(queries_list)
+    }
+
 @app.post("/api/upload")
 async def upload_queries(file: UploadFile = File(...)):
-    """Upload a file with queries"""
+    """Upload a file with queries or companies"""
     try:
         content = await file.read()
         text = content.decode('utf-8')
-        queries = [q.strip() for q in text.split('\n') if q.strip()]
         
-        return {
-            "success": True,
-            "queries": queries,
-            "count": len(queries)
-        }
+        # Check if it's a CSV file
+        if file.filename.endswith('.csv'):
+            import csv
+            import io
+            
+            # Parse CSV
+            csv_reader = csv.reader(io.StringIO(text))
+            companies = []
+            
+            # Try to detect if there's a header
+            first_row = next(csv_reader, None)
+            if first_row:
+                # If first row looks like a header (contains common header words), skip it
+                header_words = ['company', 'name', 'business', 'organization']
+                is_header = any(word.lower() in first_row[0].lower() for word in header_words)
+                
+                if not is_header:
+                    companies.append(first_row[0])
+                
+                # Read all remaining rows (no limit)
+                for row in csv_reader:
+                    if row and row[0].strip():
+                        companies.append(row[0].strip())
+            
+            return {
+                "success": True,
+                "companies": companies,
+                "count": len(companies)
+            }
+        else:
+            # Plain text file - treat each line as a company
+            companies = [q.strip() for q in text.split('\n') if q.strip()]
+            
+            return {
+                "success": True,
+                "companies": companies,
+                "count": len(companies)
+            }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
 
